@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Facebook-powered web app</title>
+    <script src="js/vue2.5.2.js"></script>
+    <script src="js/axios.js"></script>
+    <link rel="stylesheet" href="css/main.css">
+  </head>
+  
+  <body class="w3-content" style="width:70%" >
+   
+    <div class="w3-container w3-indigo" >
+     <h2>Facebook-powered web app</h2>
+    </div>
+    
+    <div id='fapp'>
+     
+      <span v-if="showform" class='w3-display-middle'>  
+        <div class="w3-row">
+          <div class="w3-container w3-half">
+            <img src="img/logon.png" style="width:100%" />
+          </div>
+        <div class="w3-container w3-half">
+            <form class="w3-container">
+              <p> <label class="w3-text-blue"> E-Mail </label> 
+              <input class="w3-input w3-border w3-light-grey" type="text" v-model='userName' required /> </p>
+              <p> <label class="w3-text-blue"> Password </label> 
+              <input class="w3-input w3-border w3-light-grey" type="text" v-model='pass' required /> </p>
+              <button class='w3-btn w3-blue'  @click.prevent='logMe'> Login </button> 
+              <button v-if="reg" class='w3-btn w3-green' @click.prevent='registerMe'> Register </button>
+              <p class="w3-text-red"> {{ isuser }}</p>
+            </form>
+          </div>
+        </div>    
+      </span>
+    
+      <span v-if="showinfo">
+        <header class="w3-container w3-light-grey">
+          <h3>Hi, {{userName}}</h3>
+        </header>
+        <div class="w3-container">
+          <p>You are connected!</p>
+          <hr />
+          <p>Let us have a look at your Facebook photos albums!</p><br>
+        </div>
+        <button  onclick='myFacebookLogin();' class="w3-button w3-block w3-blue">Continue with Facebook</button>  
+      </span>
+      
+      <span v-if="faceinfo">
+        <div class="w3-container">
+           <button onclick='LogOut()' class="w3-button w3-circle w3-red w3-right">Log out</button> 
+           <br />   <br /> 
+            <div class="w3-card-4" style="">
+              <header class="w3-container w3-blue">
+                <h3>{{ fname }}</h3>
+             </header>
+              <div class="w3-container">
+              <p>{{ fgender }}</p>
+          <hr>
+          <img :src="fphoto" alt="photo" class="w3-left w3-circle w3-margin-right" style="">
+          <p>Hi, your are connected to your Facebook account!</p><br>
+        </div>
+        <button class="w3-button w3-block w3-green"> <a :href="flink"> +Info </a></button>
+      </div>
+    </div>
+    <br />   
+    <div class="w3-container">
+      <div class="w3-card-4" style="">
+        <img :src="fcover"  alt="Facebook Cover" style="width:100%" />
+      <div class="w3-container w3-center">
+        <p>Is this your Facebook cover? </p>
+      </div>
+      </div>
+    </div>    
+      </span>
+    </div>
+   
+   
+<script type='text/javascript'>
+
+//show facebook infos function   
+function getFaceInfo(){
+ FB.getLoginStatus(function(response) {
+ console.log(response);
+   if(response.status === 'connected')  {     
+    //for photos: --- FB.api('/me/photos', {fields: 'album'}, function(response)
+    FB.api('/me', {fields: 'name, picture, cover,gender,link'}, function(response) {
+    console.log(response);
+    facebookApp.showinfo = false;
+    facebookApp.faceinfo = true;
+    facebookApp.fname = response.name;
+    facebookApp.fphoto=response.picture.data.url;
+    facebookApp.fgender = response.gender ;
+    facebookApp.flink = response.link ;   
+    facebookApp.fcover=response.cover.source;
+ });                                 }
+        });
+   } 
+    
+//vue instance           
+facebookApp= new Vue({
+             
+  el: '#fapp',
+   data:{
+     userName: '',
+     pass: '' ,
+     showform: true ,
+     showinfo: false,
+     faceinfo: false, 
+     fname :  '',
+     fphoto :  '',
+     fcover :  '',
+     fgender :  '',
+     flink :  '',
+     isuser :  '',
+     reg :  true
+   },
+              
+   methods: {
+    
+    //user login function
+    logMe() {
+        axios.post('/loguser', {
+        username: this.userName,
+        password: this.pass })
+        .then(function (response) {
+          if(response.data === 'OK') {
+            facebookApp.showform = false,
+            facebookApp.showinfo = true ;
+          } 
+          else {
+           facebookApp.isuser=response.data;
+          }                                           
+        })
+        .catch(function (error) {
+          console.log(error);
+        });
+    },
+    
+    // user register function
+    registerMe() {
+      ruser=this.userName.trim();
+      rpass= this.pass.trim();
+      if(ruser && rpass){
+        axios.post('/adduser', {
+          username: ruser,
+          password: rpass })
+        .then(function (response) {
+          if(response.data === 'OK') {
+            facebookApp.reg = false;
+            facebookApp.isuser='You are now registered!';
+            facebookApp.userName='';
+            facebookApp.pass='';
+          }
+          else {
+           facebookApp.isuser=response.data;
+          }                                            
+        })
+        .catch(function (error) {
+          console.log(error);
+        });     }
+        else  facebookApp.isuser='Please enter a valid email and password!';
+      }
+     } 
+});
+
+// facebook javascript SDK
+window.fbAsyncInit = function() {
+    FB.init({
+      appId            : '1941226552809992',
+      autoLogAppEvents : true,
+      xfbml            : true,
+      version          : 'v2.10'
+    });
+    FB.AppEvents.logPageView();
+  };
+
+(function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+
+
+//facebook login + permissions         
+function myFacebookLogin() {
+  FB.login(function(){ getFaceInfo(); }, {scope: 'user_photos'}, );
+ 
+                                 
+        
+} 
+
+//facebook logout
+function LogOut(){
+ FB.getLoginStatus(function(response) {
+ console.log(response);
+   if(response.status === 'connected')  
+   {     
+ FB.logout(function(response) {
+  window.location.href='http://localhost:8080/facebookApp';
+});                                  }
+        });
+   } 
+</script>
+   
+  </body>
+</html>
