@@ -7,7 +7,7 @@ Frontend: VueJS
 
 Backend: NodeJS
 
-Please follow these instructions to get the app work:
+Please follow these instructions to get the app works:
 
 1 - Create a mysql database with the name "faceapp"
 
